@@ -33,10 +33,12 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
+    'channels',
 
     # Custom apps
     'users',
     'profiles',
+    'notifications',
 ]
 
 MIDDLEWARE = [
@@ -73,6 +75,14 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'DTest.wsgi.application'
+ASGI_APPLICATION = "DTest.asgi.application"
+
+# Channels 
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
