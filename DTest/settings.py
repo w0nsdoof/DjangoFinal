@@ -39,6 +39,8 @@ INSTALLED_APPS = [
     'users',
     'profiles',
     'notifications',
+    'topics',
+    'teams',
 ]
 
 MIDDLEWARE = [
