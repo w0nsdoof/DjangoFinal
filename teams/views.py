@@ -2,10 +2,10 @@ from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions, status
 
 import teams
-from profiles.models import SupervisorProfile
+from profiles.models import SupervisorProfile, StudentProfile
 from topics.models import ThesisTopic
 from topics.serializers import ThesisTopicSerializer
-from .models import Team, JoinRequest, SupervisorRequest, Like
+from .models import Team, JoinRequest, SupervisorRequest, Like, Membership
 from .serializers import TeamSerializer, JoinRequestSerializer, SupervisorRequestSerializer
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
@@ -13,7 +13,6 @@ from notifications.models import Notification
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-
 
 
 def send_notification(user, message):
@@ -27,17 +26,20 @@ def send_notification(user, message):
         {"type": "send_notification", "message": message},
     )
 
+
 class TeamCreateView(generics.CreateAPIView):
     """ Allows students and supervisors to create a team manually (not needed, as teams are auto-created). """
     queryset = Team.objects.all()
     serializer_class = TeamSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+
 class TeamListView(generics.ListAPIView):
     """ Lists all teams. """
     queryset = Team.objects.all()
     serializer_class = TeamSerializer
     permission_classes = [permissions.AllowAny]
+
 
 class TeamDetailView(generics.RetrieveAPIView):
     """ Retrieves a single team. """
@@ -58,7 +60,7 @@ class MyTeamView(APIView):
                 team = Team.objects.get(members=user.student_profile)
                 serializer = TeamSerializer(team)
                 data = serializer.data
-                data['is_owner'] = False
+                data['is_owner'] = team.owner == request.user
                 return Response(data)
             except Team.DoesNotExist:
                 return Response({"detail": "No team found for student"}, status=404)
@@ -171,15 +173,18 @@ class JoinTeamView(APIView):
         team = get_object_or_404(Team, pk=pk)
 
         if JoinRequest.objects.filter(team=team, student=student_profile, status='pending').exists():
-            return Response({"error": "You already sent a join request to this team."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "You already sent a join request to this team."},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         # ✅ 4. Создание заявки
         JoinRequest.objects.create(team=team, student=student_profile)
 
         # ✅ 5. Уведомление владельцу
-        send_notification(team.owner, f"{student_profile.first_name} {student_profile.last_name} wants to join your team.")
+        send_notification(team.owner,
+                          f"{student_profile.first_name} {student_profile.last_name} wants to join your team.")
 
         return Response({"message": "Join request sent."}, status=status.HTTP_200_OK)
+
 
 class MyTeamJoinRequestsView(APIView):
     """ Owner sees join requests for his team """
@@ -224,17 +229,34 @@ class AcceptJoinRequestView(APIView):
             team = Team.objects.get(pk=pk)
             if team.owner != request.user:
                 return Response({"error": "Only the owner can accept requests."}, status=403)
-
+            if team.members.count() >= 4:
+                return Response({"error": "Team is already full."}, status=400)
             join_request = JoinRequest.objects.get(team=team, student_id=student_id, status='pending')
             team.members.add(join_request.student)
             join_request.status = 'accepted'
             join_request.save()
 
-            send_notification(join_request.student.user, f"Your request to join '{team.thesis_topic.title}' was accepted.")
+            # Уведомляем принятого студента
+            send_notification(
+                join_request.student.user,
+                f"Your request to join '{team.thesis_topic.title}' was accepted."
+            )
+
+            # 💡 Если после добавления в команде уже 4 человека — удаляем все остальные pending заявки
+            if team.members.count() >= 4:
+                other_requests = JoinRequest.objects.filter(team=team, status="pending").exclude(student=student_id)
+                for req in other_requests:
+                    send_notification(
+                        req.student.user,
+                        f"Your request to join '{team.thesis_topic.title}' was automatically rejected because the team is now full."
+                    )
+                other_requests.delete()
+
             return Response({"message": "Student added to the team."}, status=200)
 
         except (Team.DoesNotExist, JoinRequest.DoesNotExist):
             return Response({"error": "Team or join request not found."}, status=404)
+
 
 class RejectJoinRequestView(APIView):
     """ Reject a student request """
@@ -250,7 +272,8 @@ class RejectJoinRequestView(APIView):
             join_request.status = 'rejected'
             join_request.save()
 
-            send_notification(join_request.student.user, f"Your request to join '{team.thesis_topic.title}' was rejected.")
+            send_notification(join_request.student.user,
+                              f"Your request to join '{team.thesis_topic.title}' was rejected.")
             return Response({"message": "Request rejected."}, status=200)
 
         except (Team.DoesNotExist, JoinRequest.DoesNotExist):
@@ -287,6 +310,7 @@ class CreateSupervisorRequestView(APIView):
         send_notification(supervisor.user, f"{user.student_profile.first_name} requests you as supervisor.")
 
         return Response({"message": "Request sent."})
+
 
 class IncomingSupervisorRequestsView(APIView):
     permission_classes = [IsAuthenticated]
@@ -342,6 +366,7 @@ class RejectSupervisorRequestView(APIView):
         send_notification(req.team.owner, "Your supervisor request was rejected.")
         return Response({"message": "Request rejected."})
 
+
 class CancelSupervisorRequestView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -353,6 +378,7 @@ class CancelSupervisorRequestView(APIView):
             return Response({"message": "Request canceled."})
         except (Team.DoesNotExist, SupervisorRequest.DoesNotExist):
             return Response({"error": "No pending request."}, status=404)
+
 
 class LikeToggleView(APIView):
     permission_classes = [IsAuthenticated]
@@ -370,6 +396,7 @@ class LikeToggleView(APIView):
             return Response({"message": "Unliked"}, status=200)
         return Response({"message": "Liked"}, status=201)
 
+
 class LikedProjectsView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -378,3 +405,126 @@ class LikedProjectsView(APIView):
         teams = Team.objects.filter(id__in=liked_team_ids)
         serializer = TeamSerializer(teams, many=True)
         return Response(serializer.data)
+
+
+class LeaveTeamView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+
+        if not hasattr(user, 'student_profile'):
+            return Response({"error": "Only students can leave teams."}, status=403)
+
+        student = user.student_profile
+
+        try:
+            team = Team.objects.get(members=student)
+        except Team.DoesNotExist:
+            return Response({"error": "You are not in a team."}, status=404)
+
+        was_owner = team.owner == user
+
+        # Удаляем участника
+        team.members.remove(student)
+
+        # ✅ Обнуляем created_by_student, если студент был автором темы
+        if team.thesis_topic.created_by_student == student:
+            team.thesis_topic.created_by_student = None
+            team.thesis_topic.save()
+
+        # Уведомляем текущего owner'а (если остался и не сам вышел)
+        if not was_owner:
+            send_notification(team.owner, f"{student.first_name} {student.last_name} has left your team.")
+
+        if team.members.count() == 0 and team.supervisor is None:
+            thesis = team.thesis_topic
+            team.delete()
+            thesis.delete()
+            return Response({"message": "You were the last member. Team and project deleted."})
+
+        # Если был owner → назначаем нового
+        if was_owner:
+            next_member = Membership.objects.filter(team=team).order_by('joined_at').first()
+            if next_member:
+                team.owner = next_member.student.user
+                team.save()
+                send_notification(team.owner, "You are now the new owner of the team.")
+            else:
+                thesis = team.thesis_topic
+                team.delete()
+                thesis.delete()
+                return Response({"message": "You were the last member. Team and project deleted."})
+
+        return Response({"message": "You left the team successfully."})
+
+
+class SupervisorDeleteTeamView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        user = request.user
+
+        # Проверка: это точно супервизор?
+        if not hasattr(user, "supervisor_profile"):
+            return Response({"error": "Only supervisors can delete."}, status=403)
+
+        try:
+            team = Team.objects.get(pk=pk)
+        except Team.DoesNotExist:
+            return Response({"error": "Team not found."}, status=404)
+
+        if team.supervisor is None or team.supervisor.user != user:
+            return Response({"error": "You are not the supervisor of this team."}, status=403)
+
+        if team.members.exists():
+            return Response({"error": "You cannot delete the team while it has members."}, status=400)
+
+        thesis = team.thesis_topic
+        team.delete()
+        thesis.delete()
+
+        return Response({"message": "Team and project deleted."}, status=200)
+
+
+class RemoveTeamMemberView(APIView):
+    """ Позволяет owner'у или supervisor'у удалить участника из команды """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk, student_id):
+        user = request.user
+
+        try:
+            team = Team.objects.get(pk=pk)
+        except Team.DoesNotExist:
+            return Response({"error": "Team not found."}, status=404)
+
+        is_owner = team.owner == user
+        is_supervisor = team.supervisor and team.supervisor.user == user
+
+        if not (is_owner or is_supervisor):
+            return Response({"error": "Only the owner or supervisor can remove members."}, status=403)
+
+        if student_id == user.id:
+            return Response({"error": "You cannot remove yourself."}, status=400)
+
+        try:
+            student = StudentProfile.objects.get(user_id=student_id)
+        except StudentProfile.DoesNotExist:
+            return Response({"error": "Student not found."}, status=404)
+
+        if student not in team.members.all():
+            return Response({"error": "Student is not in the team."}, status=400)
+
+        # Удаляем участника
+        team.members.remove(student)
+
+        # ✅ Обнуляем created_by_student, если студент был автором темы
+        if team.thesis_topic.created_by_student == student:
+            team.thesis_topic.created_by_student = None
+            team.thesis_topic.save()
+
+        # Уведомляем студента
+        send_notification(student.user, f"You were removed from the team '{team.thesis_topic.title}'.")
+
+        return Response({"message": "Student removed from the team."}, status=200)
