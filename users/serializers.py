@@ -7,9 +7,11 @@ from rest_framework.exceptions import AuthenticationFailed
 from django.utils import timezone
 from users.models import CustomUser
 from profiles.models import StudentProfile, SupervisorProfile, DeanOfficeProfile
+from datetime import timedelta
+import logging
 
 User = get_user_model()
-
+logger = logging.getLogger(__name__)
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -22,37 +24,60 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         email = attrs.get("email")
         password = attrs.get("password")
+        now = timezone.now()
 
         try:
             user = CustomUser.objects.get(email=email)
         except CustomUser.DoesNotExist:
             raise AuthenticationFailed("User with given email does not exist")
 
-        now = timezone.now()
+        logger.warning(
+            f"[DEBUG] START {email} — failed: {user.failed_login_attempts}, blocked: {user.blocked_until}, last_failed: {user.last_failed_login}"
+        )
+        
         if user.blocked_until and now < user.blocked_until:
             remaining = (user.blocked_until - now).seconds // 60
-            raise AuthenticationFailed(f"Account is blocked for {remaining} minute(s)")
+            raise AuthenticationFailed(f"Account is temporarily blocked. Try again in {remaining} minute(s).")
+
+        # Сброс, если прошло больше 10 минут
+        if user.last_failed_login and now - user.last_failed_login > timedelta(minutes=10):
+            user.failed_login_attempts = 0
+            user.block_duration = 5
+            user.save()
 
         if not user.check_password(password):
+            # ⛔ Проверка повторного запроса
+            if user.last_failed_login and (now - user.last_failed_login).total_seconds() < 1:
+                logger.warning(f"[SPAM BLOCK] {email} — Ignored duplicate request")
+                raise AuthenticationFailed("Too many login attempts. Please wait a moment.")
+
+            # 📌 Только теперь увеличиваем
             user.failed_login_attempts += 1
+            user.last_failed_login = now
 
             if user.failed_login_attempts >= 3:
-                user.blocked_until = timezone.now() + timezone.timedelta(minutes=user.block_duration)
+                block_minutes = user.block_duration
+                user.blocked_until = now + timedelta(minutes=block_minutes)
                 user.block_duration += 5
                 user.failed_login_attempts = 0
+                user.last_failed_login = None
                 user.save()
-                raise AuthenticationFailed(f"Account is blocked for {user.block_duration - 5} minutes")
-            else:
-                attempts_left = 3 - user.failed_login_attempts
-                user.save()
-                raise AuthenticationFailed(f"Incorrect password. Attempts left: {attempts_left}")
+                logger.warning(f"[BLOCKED] {email} blocked for {block_minutes} minutes")
+                raise AuthenticationFailed(f"Account is temporarily blocked. Try again in {block_minutes} minutes.")
+            
+            user.save()
+            attempts_left = 3 - user.failed_login_attempts
+            logger.warning(f"[LOGIN FAIL] {email} — Attempts left: {attempts_left}")
+            raise AuthenticationFailed(f"Incorrect password. Attempts left: {attempts_left}")
 
         # Успешный вход — сброс
         user.failed_login_attempts = 0
         user.blocked_until = None
         user.block_duration = 5
+        user.last_failed_login = None
         user.save()
 
+        logger.info(f"[LOGIN SUCCESS] {email} successfully logged in")
         return super().validate(attrs)
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
