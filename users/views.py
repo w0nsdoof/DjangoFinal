@@ -1,24 +1,25 @@
 import logging
 from django.db import transaction
-from rest_framework import generics, status
 from django.contrib.auth import get_user_model
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 from django.core.mail import send_mail
 from django.conf import settings
+from .models import AccessLog
+from rest_framework import generics, status
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.views import APIView
+from rest_framework_simplejwt.views import TokenObtainPairView
 from datetime import timedelta
 from django.utils import timezone
 from rest_framework.exceptions import AuthenticationFailed
-from .models import AccessLog
 from .serializers import (
     UserRegistrationSerializer, CustomTokenObtainPairSerializer,
     UserSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer
 )
+from rest_framework_simplejwt.views import TokenRefreshView
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -28,9 +29,10 @@ def get_client_ip(request):
     x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
     return x_forwarded_for.split(",")[0] if x_forwarded_for else request.META.get("REMOTE_ADDR")
 
+
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
-    
+
     def post(self, request, *args, **kwargs):
         email = request.data.get("email", "")
         ip = get_client_ip(request)
@@ -52,30 +54,14 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 logger.info(f"✅ JWT Login: {email} (IP: {ip})")
                 AccessLog.objects.create(
                     user=user,
-                    action='login',
+                    action="login",
                     ip_address=ip,
-                    user_agent=request.META.get('HTTP_USER_AGENT', '')
+                    user_agent=request.META.get("HTTP_USER_AGENT", ""),
                 )
 
             return response
 
         except AuthenticationFailed as e:
-            logger.warning(f"Неудачный вход: {email} (IP: {ip}) — {str(e)}")
-
-            try:
-                user = User.objects.get(email=email)
-                user.failed_login_attempts += 1
-
-                if user.failed_login_attempts >= 3:
-                    user.blocked_until = timezone.now() + timedelta(minutes=user.block_duration)
-                    logger.warning(f"🛡 Пользователь {email} заблокирован на {user.block_duration} минут")
-                    user.block_duration += 5  # увеличим блокировку в будущем
-                    user.failed_login_attempts = 0  # сбрасываем счётчик
-
-                user.save()
-            except User.DoesNotExist:
-                logger.warning(f"Попытка входа с несуществующим email: {email} (IP: {ip})")
-
             logger.warning(f"❌ Failed login: {email} (IP: {ip}) — {str(e)}")
             raise
 

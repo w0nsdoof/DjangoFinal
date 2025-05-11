@@ -7,12 +7,12 @@ from .models import Notification
 from .serializers import NotificationSerializer
 from django.shortcuts import get_object_or_404
 
+
 class NotificationListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         notifications = Notification.objects.filter(user=request.user).order_by('-timestamp')
-        notifications.update(is_read=True)
         serializer = NotificationSerializer(notifications, many=True)
         return Response(serializer.data)
 

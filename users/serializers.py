@@ -1,3 +1,5 @@
+from datetime import timedelta
+from django.core.cache import cache
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
@@ -7,12 +9,11 @@ from rest_framework.exceptions import AuthenticationFailed
 from django.utils import timezone
 from users.models import CustomUser
 from profiles.models import StudentProfile, SupervisorProfile, DeanOfficeProfile
-from datetime import timedelta
-from django.core.cache import cache
 import logging
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
+
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -27,7 +28,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         password = attrs.get("password")
         request = self.context.get("request")
         now = timezone.now()
-        
+
         # IP логика
         ip_address = request.META.get("REMOTE_ADDR", "unknown")
         cache_key = f"login_attempts:{ip_address}"
@@ -45,7 +46,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             cache.incr(cache_key)
             cache.expire(cache_key, 600)  # 10 мин
             raise AuthenticationFailed("Invalid credentials")
-        
+
         # 3. Проверка блокировки пользователя
         if user.blocked_until and now < user.blocked_until:
             remaining = (user.blocked_until - now).seconds // 60
@@ -87,7 +88,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                     "blocked": True,
                     "blocked_until": user.blocked_until,
                 })
-            
+
             user.save()
             attempts_left = 3 - user.failed_login_attempts
             raise AuthenticationFailed(f"Incorrect password. Attempts left: {attempts_left}")
@@ -95,7 +96,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         # 6. Успешный вход — всё сбрасываем
         cache.delete(cache_key)
         cache.delete(cache_block_key)
-        
+
         user.failed_login_attempts = 0
         user.blocked_until = None
         user.block_duration = 5
@@ -103,6 +104,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         user.save()
 
         return super().validate(attrs)
+
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])

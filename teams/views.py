@@ -13,11 +13,9 @@ from notifications.models import Notification
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-
 from .utils.export_excel import generate_excel_for_approved_teams
 from datetime import datetime
 from django.http import HttpResponse
-
 
 def send_notification(user, message):
     """ Sends a notification to a user (DB + WebSocket) """
@@ -105,6 +103,7 @@ class SupervisorProjectsView(APIView):
             "count": created_topics.count() + supervised_teams.count()
         })
 
+
 class MyJoinRequestView(APIView):
     """Проверяет, есть ли активная заявка у текущего студента"""
     permission_classes = [IsAuthenticated]
@@ -125,6 +124,7 @@ class MyJoinRequestView(APIView):
             }, status=200)
 
         return Response({"status": "no_request"}, status=200)
+
 
 class MyJoinRequestsView(APIView):
     """ Get all join requests of the current student """
@@ -151,6 +151,7 @@ class MyJoinRequestsView(APIView):
             return Response({"message": "Request canceled."})
         except JoinRequest.DoesNotExist:
             return Response({"error": "Request not found."}, status=404)
+
 
 class JoinTeamView(APIView):
     """ Позволяет студенту подать заявку и присоединиться к команде """
@@ -283,7 +284,6 @@ class RejectJoinRequestView(APIView):
         except (Team.DoesNotExist, JoinRequest.DoesNotExist):
             return Response({"error": "Team or join request not found."}, status=404)
 
-# teams/views.py
 
 class CreateSupervisorRequestView(APIView):
     permission_classes = [IsAuthenticated]
@@ -326,6 +326,7 @@ class IncomingSupervisorRequestsView(APIView):
         requests = SupervisorRequest.objects.filter(supervisor=request.user.supervisor_profile, status='pending')
         serializer = SupervisorRequestSerializer(requests, many=True)
         return Response(serializer.data)
+
 
 class AcceptSupervisorRequestView(APIView):
     permission_classes = [IsAuthenticated]
@@ -532,6 +533,7 @@ class RemoveTeamMemberView(APIView):
         send_notification(student.user, f"You were removed from the team '{team.thesis_topic.title}'.")
 
         return Response({"message": "Student removed from the team."}, status=200)
+
 
 class ApproveTeamView(APIView):
     permission_classes = [permissions.IsAuthenticated]
