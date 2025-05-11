@@ -14,6 +14,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ['id', 'email', 'role', 'profile']
+        ref_name = "ChatUserSerializer"  # Explicit ref_name to avoid naming conflict
 
     def get_profile(self, obj):
         if obj.role == "Student" and hasattr(obj, "student_profile"):

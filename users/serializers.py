@@ -153,6 +153,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'email', 'role', 'is_profile_completed')
+        ref_name = "UserProfileSerializer"  # Explicit ref_name to avoid naming conflict
 
 
 class PasswordResetRequestSerializer(serializers.Serializer):

@@ -1,7 +1,8 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions, status
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 
-import teams
 from profiles.models import SupervisorProfile, StudentProfile
 from topics.models import ThesisTopic
 from topics.serializers import ThesisTopicSerializer
@@ -18,7 +19,13 @@ from datetime import datetime
 from django.http import HttpResponse
 
 def send_notification(user, message):
-    """ Sends a notification to a user (DB + WebSocket) """
+    """ 
+    Sends a notification to a user (DB + WebSocket)
+    
+    Args:
+        user: User to send notification to
+        message: Notification message content
+    """
     Notification.objects.create(user=user, message=message)
 
     # Send real-time notification via WebSocket
@@ -30,24 +37,82 @@ def send_notification(user, message):
 
 
 class TeamCreateView(generics.CreateAPIView):
-    """ Allows students and supervisors to create a team manually (not needed, as teams are auto-created). """
+    """
+    API endpoint for creating a new team.
+    
+    Allows students and supervisors to create a team manually.
+    """
     queryset = Team.objects.all()
     serializer_class = TeamSerializer
     permission_classes = [permissions.IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_summary="Create team",
+        operation_description="Creates a new team with the current user as owner",
+        request_body=TeamSerializer,
+        responses={
+            201: TeamSerializer,
+            400: "Bad Request - Invalid data",
+            401: "Authentication credentials were not provided"
+        },
+        security=[{'Bearer': []}]
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
 
 
 class TeamListView(generics.ListAPIView):
-    """ Lists all teams. """
+    """
+    API endpoint for listing all teams.
+    
+    Returns a list of all teams in the system.
+    No authentication required.
+    """
     queryset = Team.objects.all()
     serializer_class = TeamSerializer
     permission_classes = [permissions.AllowAny]
+    
+    @swagger_auto_schema(
+        operation_summary="List all teams",
+        operation_description="Returns a list of all teams in the system",
+        responses={
+            200: TeamSerializer(many=True)
+        }
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
 
 class TeamDetailView(generics.RetrieveAPIView):
-    """ Retrieves a single team. """
+    """
+    API endpoint for retrieving details of a specific team.
+    
+    Returns detailed information about a single team by ID.
+    No authentication required.
+    """
     queryset = Team.objects.all()
     serializer_class = TeamSerializer
     permission_classes = [permissions.AllowAny]
+    
+    @swagger_auto_schema(
+        operation_summary="Get team details",
+        operation_description="Retrieves detailed information about a specific team",
+        manual_parameters=[
+            openapi.Parameter(
+                'pk', 
+                openapi.IN_PATH, 
+                description="ID of the team", 
+                type=openapi.TYPE_INTEGER,
+                required=True
+            ),
+        ],
+        responses={
+            200: TeamSerializer,
+            404: "Team not found"
+        }
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
 
 class MyTeamView(APIView):

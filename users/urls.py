@@ -3,7 +3,9 @@ from .views import (
     RegisterView, CustomTokenObtainPairView, UserDetailView,
     PasswordResetRequestView, PasswordResetConfirmView, ManualLogoutView, CustomTokenRefreshView
 )
+from drf_yasg.utils import swagger_auto_schema
 
+# We'll use standard URL patterns without the complex decorators
 urlpatterns = [
     path("register/", RegisterView.as_view(), name="register"),
     path("login/", CustomTokenObtainPairView.as_view(), name="login"),
