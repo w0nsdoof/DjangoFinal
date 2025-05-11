@@ -36,34 +36,20 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         ip = get_client_ip(request)
 
         try:
-            user = User.objects.get(email=email)
-            now = timezone.now()
-
-            # Проверка на временную блокировку
-            if user.blocked_until and now < user.blocked_until:
-                remaining = (user.blocked_until - now).seconds // 60
-                logger.warning(f"⛔ Заблокирован: {email} до {user.blocked_until}")
-                raise AuthenticationFailed(f"Account is temporarily blocked. Try again in {remaining} minutes.")
-
-            # Если время блокировки прошло — сбрасываем
-            if user.blocked_until and now >= user.blocked_until:
-                user.blocked_until = None
-                user.failed_login_attempts = 0
-                user.save()
-
             response = super().post(request, *args, **kwargs)
 
             if response.status_code == 200:
-                user.failed_login_attempts = 0
-                user.block_duration = 5  # сбрасываем прогрессивную блокировку
-                user.blocked_until = None
+                user = User.objects.get(email=email)
 
+                # IP-логика
                 if user.last_login_ip != ip:
-                    logger.warning(f"Новый IP входа: {ip} для {email}")
+                    logger.warning(f"🕵️ New login IP detected: {ip} for {email}")
                 user.last_login_ip = ip
+
+                # Сброс безопасный, но не обязателен — уже делается в validate()
                 user.save()
 
-                logger.info(f"JWT-вход: {email} (IP: {ip})")
+                logger.info(f"✅ JWT Login: {email} (IP: {ip})")
                 AccessLog.objects.create(
                     user=user,
                     action='login',
@@ -90,6 +76,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             except User.DoesNotExist:
                 logger.warning(f"Попытка входа с несуществующим email: {email} (IP: {ip})")
 
+            logger.warning(f"❌ Failed login: {email} (IP: {ip}) — {str(e)}")
             raise
 
 
