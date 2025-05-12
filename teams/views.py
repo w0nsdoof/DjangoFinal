@@ -116,8 +116,25 @@ class TeamDetailView(generics.RetrieveAPIView):
 
 
 class MyTeamView(APIView):
+    """
+    API endpoint for retrieving the current user's team information.
+    
+    Returns team information based on user type:
+    - For students: returns the team they are a member of
+    - For supervisors: returns all teams they own
+    """
     permission_classes = [IsAuthenticated]
-
+    
+    @swagger_auto_schema(
+        operation_summary="Get my team",
+        operation_description="Returns current user's team information based on their role",
+        responses={
+            200: TeamSerializer,
+            400: "Bad Request - No profile found",
+            404: "Not Found - No team found"
+        },
+        security=[{'Bearer': []}]
+    )
     def get(self, request):
         user = request.user
 
