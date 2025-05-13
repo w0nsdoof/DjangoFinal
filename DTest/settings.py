@@ -1,6 +1,7 @@
 from datetime import timedelta
 from pathlib import Path
 import os, dotenv
+import dj_database_url
 
 dotenv.load_dotenv()
 
@@ -15,10 +16,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-9%usa4!4*lxnn57((lwf)5ed=z_pfo%qs2d69a32v36ha-xq(m'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False')
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = ['*']
+FRONTEND_URL = os.getenv("FRONTEND_URL", 'http://localhost:5173 ')
 
 # Application definition
 
@@ -59,8 +60,7 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
+    FRONTEND_URL,
 ]
 
 # И если ты используешь fetch/axios с credentials (куки), тогда:
@@ -131,10 +131,11 @@ CHANNEL_LAYERS = {
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.parse(
+        os.getenv('DATABASE_URL', 'postgres://postgres:postgres@localhost:5432/test_db'),
+        conn_max_age=600,
+        ssl_require=False
+    )
 }
 
 
@@ -177,7 +178,6 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 
-FRONTEND_URL = "http://localhost:5173"
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
@@ -212,16 +212,10 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'simple',
         },
-        'file': {
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'logs/app.log'),
-            'formatter': 'verbose',
-            'encoding': 'utf-8',
-        },
     },
 
     'root': {
-        'handlers': ['console', 'file'],
+        'handlers': ['console'],
         'level': 'INFO',
     },
 }
@@ -229,6 +223,6 @@ LOGGING = {
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1",
+        "LOCATION": os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1"),
     }
 }
