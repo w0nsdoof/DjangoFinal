@@ -78,6 +78,7 @@ import ChatWindow from "./ChatWindow.vue";
 import axios from "axios";
 import { useAuthStore } from "../../store/auth";
 import dayjs from "dayjs"; // если ещё не подключил
+import apiConfig from "../../utils/api";
 
 const chatStore = useChatStore();
 const authStore = useAuthStore();
@@ -91,14 +92,14 @@ const closeModal = () => {
 
 const fetchChats = async () => {
   try {
-    const res = await axios.get("http://127.0.0.1:8000/api/chats/", {
+    const res = await axios.get(`${apiConfig.baseURL}/api/chats/`, {
       headers: { Authorization: `Bearer ${authStore.token}` },
     });
     chatStore.setChatList(res.data);
 
     for (const chat of res.data) {
       const messagesRes = await axios.get(
-        `http://127.0.0.1:8000/api/chats/${chat.id}/messages/`,
+        `${apiConfig.baseURL}/api/chats/${chat.id}/messages/`,
         {
           headers: { Authorization: `Bearer ${authStore.token}` },
         }
@@ -160,7 +161,7 @@ const getOtherParticipant = (chat) => {
         }`.trim()
       : other?.email,
     photo: other?.profile?.photo
-      ? `http://127.0.0.1:8000${other.profile.photo}`
+      ? `${apiConfig.baseURL}${other.profile.photo}`
       : null,
   };
 };
@@ -188,7 +189,7 @@ const selectChat = async (id) => {
     if (unreadMessages && unreadMessages.length > 0) {
       for (const msg of unreadMessages) {
         await axios.patch(
-          `http://127.0.0.1:8000/api/messages/${msg.id}/read/`,
+          `${apiConfig.baseURL}/api/messages/${msg.id}/read/`,
           {},
           { headers: { Authorization: `Bearer ${authStore.token}` } }
         );

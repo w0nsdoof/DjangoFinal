@@ -2,7 +2,12 @@
   <div class="dashboard-wrapper">
     <div class="dashboard-container">
       <div
-        v-if="!user?.is_profile_completed && showModal"
+        v-if="!user?.is_profile_completed &&import { ref, computed, onMounted, watch } from "vue";
+import axios from "axios";
+import { useAuthStore } from "../store/auth";
+import { useLikeStore } from "../store/likes";
+import { useRoute, useRouter } from "vue-router";
+import apiConfig from "../utils/api";Modal"
         class="modal-overlay"
       >
         <div class="modal-box">
@@ -224,7 +229,7 @@ const getPhoto = (person) => {
   if (photoPath) {
     return photoPath.startsWith("http")
       ? photoPath
-      : `http://127.0.0.1:8000${photoPath}`;
+      : `${apiConfig.baseURL}${photoPath}`;
   }
   return new URL("../icons/default-avatar.png", import.meta.url).href;
 };
@@ -243,7 +248,7 @@ const applyToTeam = async (teamId) => {
   if (userHasTeam.value || userHasPendingRequest.value) return;
   try {
     await axios.post(
-      `http://127.0.0.1:8000/api/teams/${teamId}/join/`,
+      `${apiConfig.baseURL}/api/teams/${teamId}/join/`,
       {},
       {
         headers: { Authorization: `Bearer ${authStore.token}` },
@@ -259,7 +264,7 @@ const applyToTeam = async (teamId) => {
 const downloadExcel = async () => {
   try {
     const res = await axios.get(
-      "http://127.0.0.1:8000/api/teams/export-excel/",
+      `${apiConfig.baseURL}/api/teams/export-excel/`,
       {
         headers: { Authorization: `Bearer ${authStore.token}` },
         responseType: "blob",
@@ -286,9 +291,9 @@ onMounted(async () => {
     if (!user?.is_profile_completed) showModal.value = true;
     await likeStore.fetchLikes();
     await authStore.refreshTeamAndRequestStatus();
-    let endpoint = "http://127.0.0.1:8000/api/teams/";
+    let endpoint = `${apiConfig.baseURL}/api/teams/`;
     if (user?.role === "Dean Office") {
-      endpoint = "http://127.0.0.1:8000/api/teams/approved/";
+      endpoint = `${apiConfig.baseURL}/api/teams/approved/`;
     }
 
     const res = await axios.get(endpoint, {
@@ -298,7 +303,7 @@ onMounted(async () => {
 
     projects.value = res.data;
     const profileRes = await axios.get(
-      "http://127.0.0.1:8000/api/profiles/complete-profile/",
+      `${apiConfig.baseURL}/api/profiles/complete-profile/`,
       {
         headers: { Authorization: `Bearer ${authStore.token}` },
       }

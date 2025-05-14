@@ -192,6 +192,7 @@ import { useAuthStore } from "../../../store/auth";
 import axios from "axios";
 import { useLikeStore } from "../../../store/likes";
 import { useChatStore } from "../../../store/chat";
+import apiConfig from "../../utils/api";
 const chatStore = useChatStore();
 const likeStore = useLikeStore();
 const isViewedSupervisor = computed(() => {
@@ -229,7 +230,7 @@ const applyToTeam = async (teamId) => {
   if (userHasTeam.value || userHasPendingRequest.value) return;
   try {
     await axios.post(
-      `http://127.0.0.1:8000/api/teams/${teamId}/join/`,
+      `${apiConfig.baseURL}/api/teams/${teamId}/join/`,
       {},
       {
         headers: { Authorization: `Bearer ${authStore.token}` },
@@ -253,7 +254,7 @@ const cancelLeave = () => {
 const startChat = async () => {
   try {
     const res = await axios.post(
-      "http://127.0.0.1:8000/api/chats/start/",
+      `${apiConfig.baseURL}/api/chats/start/`,
       { user_id: profile.value.user }, // 👈 ВАЖНО: именно user, не id!
       {
         headers: { Authorization: `Bearer ${authStore.token}` },
@@ -271,7 +272,7 @@ const startChat = async () => {
 const confirmLeave = async () => {
   try {
     await axios.post(
-      "http://127.0.0.1:8000/api/teams/leave/",
+      `${apiConfig.baseURL}/api/teams/leave/`,
       {},
       {
         headers: { Authorization: `Bearer ${authStore.token}` },
@@ -296,7 +297,7 @@ const profileImage = computed(() =>
   profile.value.photo
     ? profile.value.photo.startsWith("http")
       ? profile.value.photo
-      : `http://127.0.0.1:8000${profile.value.photo}`
+      : `${apiConfig.baseURL}${profile.value.photo}`
     : defaultAvatar
 );
 
@@ -310,7 +311,7 @@ const getPhoto = (user) => {
   if (user.photo) {
     return user.photo.startsWith("http")
       ? user.photo
-      : `http://127.0.0.1:8000${user.photo}`;
+      : `${apiConfig.baseURL}${user.photo}`;
   }
   return defaultAvatar;
 };
@@ -345,7 +346,7 @@ const loadProfileData = async () => {
   await likeStore.fetchLikes();
   try {
     const skillsRes = await axios.get(
-      "http://127.0.0.1:8000/api/profiles/skills/",
+      `${apiConfig.baseURL}/api/profiles/skills/`,
       {
         headers: { Authorization: `Bearer ${authStore.token}` },
       }
@@ -357,7 +358,7 @@ const loadProfileData = async () => {
       props.viewedUserId !== authStore.user.id.toString()
     ) {
       const profileRes = await axios.get(
-        `http://127.0.0.1:8000/api/profiles/students/${props.viewedUserId}/`,
+        `${apiConfig.baseURL}/api/profiles/students/${props.viewedUserId}/`,
         {
           headers: { Authorization: `Bearer ${authStore.token}` },
         }
@@ -367,7 +368,7 @@ const loadProfileData = async () => {
       team.value = profileRes.data.team || null;
     } else {
       const profileRes = await axios.get(
-        "http://127.0.0.1:8000/api/profiles/complete-profile/",
+        `${apiConfig.baseURL}/api/profiles/complete-profile/`,
         {
           headers: { Authorization: `Bearer ${authStore.token}` },
         }
@@ -375,7 +376,7 @@ const loadProfileData = async () => {
       profile.value = profileRes.data;
       selectedSkills.value = profileRes.data.skills?.map((s) => s.id) || [];
 
-      const teamRes = await axios.get("http://127.0.0.1:8000/api/teams/my/", {
+      const teamRes = await axios.get(`${apiConfig.baseURL}/api/teams/my/`, {
         headers: { Authorization: `Bearer ${authStore.token}` },
       });
       team.value = teamRes.data || null;

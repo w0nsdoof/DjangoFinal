@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { useAuthStore } from "./auth"; 
 import axios from "axios";
+import apiConfig from '../utils/api';
 
 export const useChatStore = defineStore("chat", {
   state: () => ({
@@ -53,7 +54,7 @@ export const useChatStore = defineStore("chat", {
     async fetchMessages(chatId) {
       try {
         const authStore = useAuthStore();
-        const res = await axios.get(`http://127.0.0.1:8000/api/chats/${chatId}/messages/`, {
+        const res = await axios.get(`${apiConfig.baseURL}/api/chats/${chatId}/messages/`, {
           headers: { Authorization: `Bearer ${authStore.token}` },
         });
         this.setMessages(chatId, res.data);

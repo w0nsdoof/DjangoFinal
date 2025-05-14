@@ -62,6 +62,7 @@ import { useChatStore } from "../../store/chat";
 import { useAuthStore } from "../../store/auth";
 import axios from "axios";
 import dayjs from "dayjs";
+import apiConfig from "../../utils/api";
 
 const defaultAvatar = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 const chatStore = useChatStore();
@@ -116,7 +117,7 @@ const otherUserFullName = computed(() => {
 const otherUserPhoto = computed(() => {
   if (!otherUser.value) return null;
   if (otherUser.value.profile?.photo) {
-    return `http://127.0.0.1:8000${otherUser.value.profile.photo}`;
+    return `${apiConfig.baseURL}${otherUser.value.profile.photo}`;
   }
   return null;
 });
@@ -168,7 +169,7 @@ const fetchUserStatus = async () => {
   const userId = getOtherUserId();
   if (userId) {
     try {
-      const res = await axios.get(`http://127.0.0.1:8000/api/users/${userId}/status/`);
+      const res = await axios.get(`${apiConfig.baseURL}/api/users/${userId}/status/`);
       isOnline.value = res.data.is_online;
       lastSeen.value = res.data.last_seen;
     } catch (error) {
@@ -183,7 +184,9 @@ const connectWebSocket = () => {
   if (ws.value) {
     ws.value.close();
   }
-  ws.value = new WebSocket(`${protocol}://127.0.0.1:8000/ws/chat/${chatStore.activeChatId}/?token=${token}`);
+  // Use the hostname from the apiConfig, but strip off any http:// or https:// prefix
+  const wsHost = apiConfig.baseURL.replace(/^https?:\/\//, '');
+  ws.value = new WebSocket(`${protocol}://${wsHost}/ws/chat/${chatStore.activeChatId}/?token=${token}`);
 
   ws.value.onopen = () => {
     console.log("Chat WebSocket connected");
@@ -237,7 +240,7 @@ const sendMessage = async () => {
   ws.value.send(JSON.stringify({ message: messageContent }));
 
   try {
-    await axios.post(`http://127.0.0.1:8000/api/chats/${chatStore.activeChatId}/messages/`, { content: messageContent }, {
+    await axios.post(`${apiConfig.baseURL}/api/chats/${chatStore.activeChatId}/messages/`, { content: messageContent }, {
       headers: { Authorization: `Bearer ${authStore.token}` },
     });
     await chatStore.fetchMessages(chatStore.activeChatId);

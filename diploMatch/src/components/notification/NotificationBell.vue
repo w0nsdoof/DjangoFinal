@@ -13,6 +13,7 @@ import axios from "axios";
 import { useAuthStore } from "../../store/auth";
 import { useNotificationStore } from "../../store/notifications";
 import { useRoute } from "vue-router";
+import apiConfig from "../../utils/api";
 const route = useRoute();
 const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
@@ -22,7 +23,7 @@ let socket = null;
 const fetchUnread = async () => {
   try {
     const res = await axios.get(
-      "http://127.0.0.1:8000/api/notifications/unread/",
+      `${apiConfig.baseURL}/api/notifications/unread/`,
       {
         headers: { Authorization: `Bearer ${authStore.token}` },
       }
@@ -38,9 +39,8 @@ const connectWebSocket = () => {
   const token = authStore.token;
   if (!token) return; // Если нет токена — не подключаемся
 
-  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
   socket = new WebSocket(
-    `${protocol}://127.0.0.1:8000/ws/notifications/?token=${token}`
+    `${apiConfig.baseURL}/ws/notifications/?token=${token}`
   );
 
   socket.onopen = () => {

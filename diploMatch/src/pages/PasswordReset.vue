@@ -48,10 +48,11 @@
 import { ref, onMounted } from "vue";
 import axios from "axios";
 import { useRoute, useRouter } from "vue-router";
+import apiConfig from "../utils/api";
 
 const route = useRoute();
 const router = useRouter();
-const API_URL = "http://127.0.0.1:8000/api/users";
+const API_URL = `${apiConfig.baseURL}/api/users`;
 
 const email = ref("");
 const password = ref("");

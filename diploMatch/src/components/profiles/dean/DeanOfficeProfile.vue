@@ -33,6 +33,7 @@ import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../../store/auth';
 import axios from 'axios';
+import apiConfig from "../../utils/api";
 
 const fileInput = ref(null);
 const router = useRouter();
@@ -53,7 +54,7 @@ const uploadAvatar = async (e) => {
   formData.append("user", authStore.user.id);
 
   try {
-    await axios.put("http://127.0.0.1:8000/api/profiles/complete-profile/", formData, {
+    await axios.put(`${apiConfig.baseURL}/api/profiles/complete-profile/`, formData, {
       headers: {
         Authorization: `Bearer ${authStore.token}`,
         "Content-Type": "multipart/form-data",
@@ -68,13 +69,13 @@ const uploadAvatar = async (e) => {
 };
 
 onMounted(async () => {
-  const res = await axios.get("http://127.0.0.1:8000/api/profiles/complete-profile/", {
+  const res = await axios.get(`${apiConfig.baseURL}/api/profiles/complete-profile/`, {
     headers: { Authorization: `Bearer ${authStore.token}` }
   });
   profile.value = res.data;
 
   if (profile.value.photo && !profile.value.photo.startsWith("http")) {
-    profile.value.photo = `http://127.0.0.1:8000${profile.value.photo}`;
+    profile.value.photo = `${apiConfig.baseURL}${profile.value.photo}`;
   }
 });
 const capitalize = (text) => {

@@ -46,6 +46,7 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../../store/auth';
 import axios from 'axios';
+import apiConfig from "../../utils/api";
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -61,12 +62,12 @@ const successMessage = ref('');
 const errorMessage = ref('');
 
 onMounted(async () => {
-  const res = await axios.get("http://127.0.0.1:8000/api/profiles/complete-profile/", {
+  const res = await axios.get(`${apiConfig.baseURL}/api/profiles/complete-profile/`, {
     headers: { Authorization: `Bearer ${authStore.token}` }
   });
   profile.value = res.data;
   if (profile.value.photo && !profile.value.photo.startsWith("http")) {
-    imagePreview.value = `http://127.0.0.1:8000${profile.value.photo}`;
+    imagePreview.value = `${apiConfig.baseURL}${profile.value.photo}`;
   } else {
     imagePreview.value = profile.value.photo;
   }
@@ -93,7 +94,7 @@ const updateProfile = async () => {
     formData.append('user', authStore.user.id);
     if (imageFile.value) formData.append('photo', imageFile.value);
 
-    await axios.put("http://127.0.0.1:8000/api/profiles/complete-profile/", formData, {
+    await axios.put(`${apiConfig.baseURL}/api/profiles/complete-profile/`, formData, {
       headers: {
         Authorization: `Bearer ${authStore.token}`,
         'Content-Type': 'multipart/form-data'

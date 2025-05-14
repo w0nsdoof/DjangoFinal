@@ -1,9 +1,10 @@
 import { defineStore } from "pinia";
 import axios from "axios";
 import { useRouter } from "vue-router";
+import apiConfig from '../utils/api';
 
-const API_URL = "http://127.0.0.1:8000/api/users/";
-const PROFILE_URL = "http://127.0.0.1:8000/api/profiles/complete-profile/";
+const API_URL = `${apiConfig.baseURL}/api/users/`;
+const PROFILE_URL = `${apiConfig.baseURL}/api/profiles/complete-profile/`;
 
 export const useAuthStore = defineStore("auth", {
   state: () => ({
@@ -104,7 +105,7 @@ export const useAuthStore = defineStore("auth", {
     
     async fetchTeamStatus() {
       try {
-        const res = await axios.get("http://127.0.0.1:8000/api/teams/my/", {
+        const res = await axios.get(`${apiConfig.baseURL}/api/teams/my/`, {
           headers: { Authorization: `Bearer ${this.token}` },
         });
 
@@ -126,7 +127,7 @@ export const useAuthStore = defineStore("auth", {
     async fetchPendingRequest() {
       try {
         const res = await axios.get(
-          "http://127.0.0.1:8000/api/teams/my-join-request/",
+          `${apiConfig.baseURL}/api/teams/my-join-request/`,
           {
             headers: { Authorization: `Bearer ${this.token}` },
           }

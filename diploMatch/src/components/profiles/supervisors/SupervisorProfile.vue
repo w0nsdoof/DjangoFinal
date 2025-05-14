@@ -220,6 +220,7 @@ import requestIcon from "../../../icons/request.png";
 import { useAuthStore } from "../../../store/auth";
 import { useLikeStore } from "../../../store/likes";
 import { useChatStore } from "../../../store/chat";
+import apiConfig from "../../utils/api";
 const chatStore = useChatStore();
 const likeStore = useLikeStore();
 const userHasTeam = computed(() => authStore.userHasTeam);
@@ -244,7 +245,7 @@ const applyToTeam = async (teamId) => {
   if (userHasTeam.value || userHasPendingRequest.value) return;
   try {
     await axios.post(
-      `http://127.0.0.1:8000/api/teams/${teamId}/join/`,
+      `${apiConfig.baseURL}/api/teams/${teamId}/join/`,
       {},
       {
         headers: { Authorization: `Bearer ${authStore.token}` },
@@ -261,7 +262,7 @@ const imageUrl = computed(() =>
   profile.value.photo
     ? profile.value.photo.startsWith("http")
       ? profile.value.photo
-      : `http://127.0.0.1:8000${profile.value.photo}`
+      : `${apiConfig.baseURL}${profile.value.photo}`
     : new URL("../../../icons/default-avatar.png", import.meta.url).href
 );
 
@@ -275,7 +276,7 @@ const getPhoto = (member) => {
   if (member.photo) {
     return member.photo.startsWith("http")
       ? member.photo
-      : `http://127.0.0.1:8000${member.photo}`;
+      : `${apiConfig.baseURL}${member.photo}`;
   }
   return new URL("../../../icons/default-avatar.png", import.meta.url).href;
 };
@@ -298,7 +299,7 @@ const cancelDelete = () => {
 const deleteTeam = async () => {
   try {
     await axios.delete(
-      `http://127.0.0.1:8000/api/teams/${teamToDelete.value}/supervisor-delete/`,
+      `${apiConfig.baseURL}/api/teams/${teamToDelete.value}/supervisor-delete/`,
       { headers: { Authorization: `Bearer ${authStore.token}` } }
     );
     alert("Team deleted successfully.");
@@ -313,7 +314,7 @@ const deleteTeam = async () => {
 const approveProject = async (projectId) => {
   try {
     await axios.post(
-      `http://127.0.0.1:8000/api/teams/${projectId}/approve/`,
+      `${apiConfig.baseURL}/api/teams/${projectId}/approve/`,
       {},
       {
         headers: {
@@ -330,7 +331,7 @@ const approveProject = async (projectId) => {
 const startChat = async () => {
   try {
     const res = await axios.post(
-      "http://127.0.0.1:8000/api/chats/start/",
+      `${apiConfig.baseURL}/api/chats/start/`,
       { user_id: profile.value.user },
       {
         headers: { Authorization: `Bearer ${authStore.token}` },
@@ -409,7 +410,7 @@ onMounted(async () => {
 
   try {
     const skillsRes = await axios.get(
-      "http://127.0.0.1:8000/api/profiles/skills/",
+      `${apiConfig.baseURL}/api/profiles/skills/`,
       {
         headers: { Authorization: `Bearer ${authStore.token}` },
       }
@@ -417,7 +418,7 @@ onMounted(async () => {
     skills.value = skillsRes.data;
     if (isViewingOther.value) {
       const me = await axios.get(
-        "http://127.0.0.1:8000/api/profiles/complete-profile/",
+        `${apiConfig.baseURL}/api/profiles/complete-profile/`,
         {
           headers: { Authorization: `Bearer ${authStore.token}` },
         }
@@ -427,7 +428,7 @@ onMounted(async () => {
 
     if (isViewingOther.value) {
       const profileRes = await axios.get(
-        `http://127.0.0.1:8000/api/profiles/supervisors/${route.params.id}/`,
+        `${apiConfig.baseURL}/api/profiles/supervisors/${route.params.id}/`,
         {
           headers: { Authorization: `Bearer ${authStore.token}` },
         }
@@ -438,7 +439,7 @@ onMounted(async () => {
       await authStore.refreshTeamAndRequestStatus();
     } else {
       const profileRes = await axios.get(
-        "http://127.0.0.1:8000/api/profiles/complete-profile/",
+        `${apiConfig.baseURL}/api/profiles/complete-profile/`,
         {
           headers: { Authorization: `Bearer ${authStore.token}` },
         }
@@ -448,7 +449,7 @@ onMounted(async () => {
       mySkills.value = profile.value.skills || [];
 
       const projectsRes = await axios.get(
-        "http://127.0.0.1:8000/api/teams/my/",
+        `${apiConfig.baseURL}/api/teams/my/`,
         {
           headers: { Authorization: `Bearer ${authStore.token}` },
         }

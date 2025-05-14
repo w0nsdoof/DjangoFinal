@@ -106,6 +106,7 @@ import { ref, onMounted, computed } from "vue";
 import axios from "axios";
 import { useAuthStore } from "../store/auth";
 import { useRouter, useRoute } from "vue-router";
+import apiConfig from "../utils/api";
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -128,7 +129,7 @@ const getPhoto = (member) => {
   if (!photo) {
     return new URL("../icons/default-avatar.png", import.meta.url).href;
   }
-  return photo.startsWith("http") ? photo : `http://127.0.0.1:8000${photo}`;
+  return photo.startsWith("http") ? photo : `${apiConfig.baseURL}${photo}`;
 };
 const project = ref({
   title: "",
@@ -139,13 +140,13 @@ const project = ref({
 
 const loadTeam = async (topicId) => {
   try {
-    let endpoint = "http://127.0.0.1:8000/api/teams/my/";
+    let endpoint = `${apiConfig.baseURL}/api/teams/my/`;
     let response = null;
     let teamData = null;
 
     if (isDean.value) {
       // 👨‍🎓 Dean → получаем все команды и ищем по topicId
-      response = await axios.get("http://127.0.0.1:8000/api/teams/approved/", {
+      response = await axios.get(`${apiConfig.baseURL}/api/teams/approved/`, {
         headers: { Authorization: `Bearer ${authStore.token}` },
       });
 
@@ -198,7 +199,7 @@ const confirmRemoveMember = (member) => {
 const removeMember = async () => {
   try {
     await axios.post(
-      `http://127.0.0.1:8000/api/teams/${team.value.id}/remove-member/${memberToRemove.value.user}/`,
+      `${apiConfig.baseURL}/api/teams/${team.value.id}/remove-member/${memberToRemove.value.user}/`,
       {},
       { headers: { Authorization: `Bearer ${authStore.token}` } }
     );
@@ -251,7 +252,7 @@ const submitProject = async () => {
     if (isEditMode.value && projectId.value) {
       // Редактирование (PATCH)
       await axios.patch(
-        `http://127.0.0.1:8000/api/topics/${projectId.value}/edit/`,
+        `${apiConfig.baseURL}/api/topics/${projectId.value}/edit/`,
         payload,
         {
           headers: { Authorization: `Bearer ${authStore.token}` },
@@ -260,7 +261,7 @@ const submitProject = async () => {
       alert("Project updated!");
     } else {
       // Создание (POST)
-      await axios.post("http://127.0.0.1:8000/api/topics/create/", payload, {
+      await axios.post(`${apiConfig.baseURL}/api/topics/create/`, payload, {
         headers: { Authorization: `Bearer ${authStore.token}` },
       });
       alert("Project created!");
@@ -275,7 +276,7 @@ const submitProject = async () => {
 onMounted(async () => {
   try {
     const skillsRes = await axios.get(
-      "http://127.0.0.1:8000/api/profiles/skills/",
+      `${apiConfig.baseURL}/api/profiles/skills/`,
       {
         headers: { Authorization: `Bearer ${authStore.token}` },
       }
@@ -287,7 +288,7 @@ onMounted(async () => {
       projectId.value = route.query.projectId;
 
       const projectRes = await axios.get(
-        `http://127.0.0.1:8000/api/topics/${projectId.value}/`,
+        `${apiConfig.baseURL}/api/topics/${projectId.value}/`,
         {
           headers: { Authorization: `Bearer ${authStore.token}` },
         }
