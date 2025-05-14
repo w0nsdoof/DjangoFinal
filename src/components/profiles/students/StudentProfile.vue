@@ -192,7 +192,7 @@ import { useAuthStore } from "../../../store/auth";
 import axios from "axios";
 import { useLikeStore } from "../../../store/likes";
 import { useChatStore } from "../../../store/chat";
-import apiConfig from "../../utils/api";
+import apiConfig from "../../../utils/apiConfig";
 const chatStore = useChatStore();
 const likeStore = useLikeStore();
 const isViewedSupervisor = computed(() => {

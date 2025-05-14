@@ -220,7 +220,7 @@ import requestIcon from "../../../icons/request.png";
 import { useAuthStore } from "../../../store/auth";
 import { useLikeStore } from "../../../store/likes";
 import { useChatStore } from "../../../store/chat";
-import apiConfig from "../../utils/api";
+import apiConfig from "../../../utils/apiConfig";
 const chatStore = useChatStore();
 const likeStore = useLikeStore();
 const userHasTeam = computed(() => authStore.userHasTeam);

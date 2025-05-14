@@ -44,6 +44,7 @@
   const confirmPassword = ref("");
   const errorMessage = ref("");
   const isLoading = ref(false);
+  const selectedRole = ref("student"); // Default role
   const authStore = useAuthStore();
   const router = useRouter();
   
@@ -60,10 +61,10 @@
     isLoading.value = true;
   
     try {
-      await authStore.register(email.value, password.value, confirmPassword.value);
+      await authStore.register(email.value, password.value, confirmPassword.value, selectedRole.value);
       router.push("/login"); // Redirect to login page after success
-    } catch (error) {
-      errorMessage.value = error.message;
+    } catch (error: any) {
+      errorMessage.value = error.message || String(error);
     } finally {
       isLoading.value = false;
     }

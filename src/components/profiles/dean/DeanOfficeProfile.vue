@@ -33,12 +33,13 @@ import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../../store/auth';
 import axios from 'axios';
-import apiConfig from "../../utils/api";
+import apiConfig from "../../../utils/apiConfig";
 
 const fileInput = ref(null);
 const router = useRouter();
 const authStore = useAuthStore();
 const profile = ref({});
+// @vite-ignore
 const defaultAvatar = new URL('../assets/default-avatar.png', import.meta.url).href;
 
 const triggerUpload = () => {

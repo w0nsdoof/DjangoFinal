@@ -33,7 +33,7 @@ const routes = [
     name: "StudentPublicProfile",
     component: StudentProfile,
     meta: { requiresAuth: true },
-    props: route => ({ viewedUserId: route.params.id, readonly: true }),
+    props: (route: { params: { id: string } }) => ({ viewedUserId: route.params.id, readonly: true }),
   },
   {
     path: "/orders",
@@ -69,12 +69,12 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore();
   const token = localStorage.getItem("token");
 
   const publicPages = ["/login", "/register", "/forgot-password"];
-  const authRequired = to.meta.requiresAuth;
+  const authRequired = to.meta.requiresAuth as boolean;
 
   // If navigating to a public page — allow directly
   if (publicPages.includes(to.path)) {

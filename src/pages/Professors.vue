@@ -52,7 +52,7 @@
 import { ref, onMounted, computed } from "vue";
 import axios from "axios";
 import { useAuthStore } from "../store/auth";
-import apiConfig from "../utils/api";
+import apiConfig from "../utils/apiConfig";
 
 const authStore = useAuthStore();
 const professors = ref([]);

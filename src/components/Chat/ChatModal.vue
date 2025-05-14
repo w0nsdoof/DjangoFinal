@@ -78,7 +78,7 @@ import ChatWindow from "./ChatWindow.vue";
 import axios from "axios";
 import { useAuthStore } from "../../store/auth";
 import dayjs from "dayjs"; // если ещё не подключил
-import apiConfig from "../../utils/api";
+import apiConfig from "../../utils/apiConfig";
 
 const chatStore = useChatStore();
 const authStore = useAuthStore();

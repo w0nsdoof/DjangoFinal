@@ -2,12 +2,7 @@
   <div class="dashboard-wrapper">
     <div class="dashboard-container">
       <div
-        v-if="!user?.is_profile_completed &&import { ref, computed, onMounted, watch } from "vue";
-import axios from "axios";
-import { useAuthStore } from "../store/auth";
-import { useLikeStore } from "../store/likes";
-import { useRoute, useRouter } from "vue-router";
-import apiConfig from "../utils/api";Modal"
+        v-if="!user?.is_profile_completed && !showModal"
         class="modal-overlay"
       >
         <div class="modal-box">
@@ -147,6 +142,7 @@ import { useAuthStore } from "../store/auth";
 import { useLikeStore } from "../store/likes";
 import { useRouter, useRoute } from "vue-router";
 import Footer from "../components/Footer/Footer.vue";
+import apiConfig from "../utils/apiConfig";
 
 const authStore = useAuthStore();
 const likeStore = useLikeStore();
@@ -231,6 +227,7 @@ const getPhoto = (person) => {
       ? photoPath
       : `${apiConfig.baseURL}${photoPath}`;
   }
+  // @vite-ignore
   return new URL("../icons/default-avatar.png", import.meta.url).href;
 };
 

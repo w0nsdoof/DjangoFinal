@@ -62,7 +62,7 @@ import { useChatStore } from "../../store/chat";
 import { useAuthStore } from "../../store/auth";
 import axios from "axios";
 import dayjs from "dayjs";
-import apiConfig from "../../utils/api";
+import apiConfig from "../../utils/apiConfig";
 
 const defaultAvatar = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 const chatStore = useChatStore();

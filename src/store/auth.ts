@@ -1,18 +1,26 @@
 import { defineStore } from "pinia";
 import axios from "axios";
 import { useRouter } from "vue-router";
-import apiConfig from '../utils/api';
+import apiConfig from '../utils/apiConfig';
 
 const API_URL = `${apiConfig.baseURL}/api/users/`;
 const PROFILE_URL = `${apiConfig.baseURL}/api/profiles/complete-profile/`;
 
+interface User {
+  id: number;
+  email: string;
+  is_profile_completed: boolean;
+  role: string;
+  [key: string]: any;
+}
+
 export const useAuthStore = defineStore("auth", {
   state: () => ({
-    user: null,
-    token: localStorage.getItem("token") || null,
+    user: null as User | null,
+    token: localStorage.getItem("token") || "",
     userHasTeam: false,
     userHasPendingRequest: false,
-    fullProfile: null,
+    fullProfile: null as any | null,
     isLoggingIn: false,
   }),
 
@@ -57,7 +65,7 @@ export const useAuthStore = defineStore("auth", {
 
         // Optionally handle redirect to profile if not complete
         const router = useRouter();
-        if (!this.user.is_profile_completed) {
+        if (this.user && !this.user.is_profile_completed) {
           router.push("/profile");
         }
       } catch (error) {
@@ -84,7 +92,7 @@ export const useAuthStore = defineStore("auth", {
     
         return { success: true };
       } catch (error: any) {
-        this.token = null;
+        this.token = "";
         localStorage.removeItem("token");
     
         // Добавляем обработку блокировки
@@ -149,7 +157,7 @@ export const useAuthStore = defineStore("auth", {
           headers: { Authorization: `Bearer ${this.token}` },
         });
 
-        this.user.is_profile_completed = true;
+        if (this.user) this.user.is_profile_completed = true;
         localStorage.setItem("user", JSON.stringify(this.user));
 
         const router = useRouter();
@@ -207,7 +215,7 @@ export const useAuthStore = defineStore("auth", {
     
       // локальная очистка токена
       this.user = null;
-      this.token = null;
+      this.token = "";
       localStorage.removeItem("token");
     
       // редирект по желанию
