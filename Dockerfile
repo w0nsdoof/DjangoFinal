@@ -4,7 +4,6 @@ FROM python:3.13-slim
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV PORT=8000
 
 # Set work directory
 WORKDIR /app
@@ -13,18 +12,17 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y libpq-dev build-essential
 
 # Install Python dependencies
-COPY requirements.txt .
+COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
-
-# Copy entrypoint script first
-COPY entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
 
 # Copy project files
 COPY . .
 
+# Copy entrypoint script first
+RUN chmod +x /app/entrypoint.sh
+
 # Set default port and expose it
-EXPOSE ${PORT}
+EXPOSE 8000
 
 # Use the entrypoint script
 ENTRYPOINT ["/app/entrypoint.sh"]
