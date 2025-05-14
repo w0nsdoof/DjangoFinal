@@ -65,6 +65,11 @@ CORS_ALLOWED_ORIGINS = [
     BACKEND_URL,
 ]
 
+CSRF_TRUSTED_ORIGINS = [ 
+    FRONTEND_URL,
+    BACKEND_URL,
+]
+
 # И если ты используешь fetch/axios с credentials (куки), тогда:
 CORS_ALLOW_CREDENTIALS = True
 ROOT_URLCONF = 'DTest.urls'
