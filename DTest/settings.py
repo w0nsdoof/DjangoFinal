@@ -19,7 +19,8 @@ SECRET_KEY = 'django-insecure-9%usa4!4*lxnn57((lwf)5ed=z_pfo%qs2d69a32v36ha-xq(m
 DEBUG = os.getenv('DEBUG', 'False')
 
 ALLOWED_HOSTS = ['*']
-FRONTEND_URL = os.getenv("FRONTEND_URL", 'http://localhost:5173 ')
+FRONTEND_URL = os.getenv("FRONTEND_URL", 'http://localhost:5173')
+BACKEND_URL = os.getenv("BACKEND_URL")
 
 # Application definition
 
@@ -61,6 +62,7 @@ MIDDLEWARE = [
 
 CORS_ALLOWED_ORIGINS = [
     FRONTEND_URL,
+    BACKEND_URL,
 ]
 
 # И если ты используешь fetch/axios с credentials (куки), тогда:
